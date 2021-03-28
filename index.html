@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content: blob:;">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css" integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="css/start.css">
+  <script src="js/methods_bootstrap.js"></script>
+  <script src="js/components_bootstrap.js"></script>
+  <script src="js/vue_utils.js"></script>
+
+  <script src="dist/js/vconsole.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+
+  <script src="js/quiz_contents.js"></script>
+
+  <title>ウマ娘： 馬名あて</title>
+</head>
+<body>
+    <div id="top" class="container">
+        <h1>ウマ娘： 馬名あて</h1>
+        <hr>
+
+        <collapse-panel id="record" class="panel-default" title="戦績" collapse="true">
+          <span slot="content">
+            <div class="panel-body">
+              <table class="table table-striped">
+                <thead>
+                  <tr><th>name</th><th>time(msec)</th><th>correct(回)</th><th>miss(回)</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in record">
+                    <td>{{item.name}}</td>
+                    <td><span v-if="item.time>=0">{{item.time}}</span></td>
+                    <td>{{item.correct}}</td><td>{{item.miss}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        </collapse-panel>
+
+        <div class="row">
+          <div class="col-xs-6">
+            <button class="btn btn-default pull-right" v-on:click="quiz_start" v-if="status==QUIZ_STATUS.IDLE">スタート</button>
+            <img class="pull-right" v-bind:src="quiz_image" v-on:click="left_click" v-on:click.right.prevent="right_click">
+          </div>
+          <div class="col-xs-6">
+            <div v-if="status==QUIZ_STATUS.IDLE">
+              <p>スタートボタンを押してください</p>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.PREPARE">
+              <p><font size="7">{{counting + 1}}</font></p>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.WAITING">
+              <p>ウマ娘の名前を答えてください。</p>
+              <p>左クリック：わかった 右クリック：降参</p>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.INPUT">
+              <p>ウマ娘の末尾の文字が正しいものを選んでください。</p>
+              <span v-for="(item, index) in quiz_select_list">
+                <label><input type="radio" name="input_select" v-on:click="quiz_select(index)"> {{item}}</label><br>
+              </span>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.ANSWER">
+              <h2><label>馬名</label> {{quiz_target.name}}</h2>
+              <p>{{quiz_target.phrase}}</p>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.CORRECT">
+              <h3>正解です！</h3>
+              <label>回答時間</label> {{answer_time}} msec {{message}}<br>
+              <h2><label>馬名</label> {{quiz_target.name}}</h2>
+              <p>{{quiz_target.phrase}}</p>
+            </div>
+            <div v-else-if="status==QUIZ_STATUS.MISS">
+              <h3>残念！</h3>
+              <h2><label>馬名</label> {{quiz_target.name}}</h2>
+            </div>
+          </div>
+        </div>
+        <br>
+
+
+
+        <!-- for progress-dialog -->
+        <progress-dialog v-bind:title="progress_title"></progress-dialog>
+    </div>
+
+    <script src="js/start.js"></script>
+</body>
