@@ -64,8 +64,8 @@ var vue_options = {
         },
         process: function(){
             if( this.counting < 0 ){
+                // 状態遷移直後
                 switch( this.status ){
-                    // 状態遷移直後
                     case QUIZ_STATUS.PREPARE:{
                         this.counting = this.PREPARE_COUNT;
                         this.interval = 1000;
