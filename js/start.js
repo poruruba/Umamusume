@@ -28,16 +28,15 @@ var vue_options = {
         quiz_select_list: [],
         quiz_select_index: 0,
         quiz_target: null,
-        quiz_target_index: 0,
         start_tim: 0,
         answer_time: 0,
         record: null,
 
         NUM_OF_SELECT: 3,   // 選択肢の数
         PREPARE_COUNT : 3, // クイズ表示までのウェイト時間(秒)
-        WAITING_DURATION: 5000, // 宣言待ち時間
-        INPUT_DURATION: 3000, // 選択待ち時間
-        RESULT_DURATION: 3000, // 結果表示時間
+        WAITING_DURATION: 5000, // 宣言待ち時間(msec)
+        INPUT_DURATION: 3000, // 選択待ち時間(msec)
+        RESULT_DURATION: 3000, // 結果表示時間(msec)
     },
     computed: {
     },
@@ -72,8 +71,8 @@ var vue_options = {
                         break;
                     }
                     case QUIZ_STATUS.WAITING:{
-                        this.quiz_target_index = getRandomInt(quiz_contents.length);
-                        this.quiz_target = quiz_contents[this.quiz_target_index];
+                        var index = getRandomInt(quiz_contents.length);
+                        this.quiz_target = quiz_contents[index];
                         this.quiz_image = this.quiz_target.blank_image;
                         this.start_tim = new Date().getTime();
 
@@ -86,8 +85,7 @@ var vue_options = {
                         select_list.push(this.quiz_target.name.slice(-1));
                         while(select_list.length < this.NUM_OF_SELECT){
                             var c = quiz_contents[getRandomInt(quiz_contents.length)].name.slice(-1);
-                            var index = select_list.findIndex(item => item == c);
-                            if( index < 0 )
+                            if( select_list.indexOf(c) < 0)
                                 select_list.push(c);
                         }
                         this.quiz_select_index = getRandomInt(this.NUM_OF_SELECT);
@@ -112,12 +110,22 @@ var vue_options = {
                         this.answer_time = new Date().getTime() - this.start_tim;
                         this.message = "";
                         this.quiz_image = this.quiz_target.image;
-                        this.record[this.quiz_target_index].correct++;
-                        if( this.record[this.quiz_target_index].time <= 0 ){
-                            this.record[this.quiz_target_index].time = this.answer_time;
+                        var index = this.record.findIndex(item => item.name == this.quiz_target.name );
+                        if( index < 0 ){
+                            index = this.record.push({
+                                name: this.quiz_target.name,
+                                time: -1,
+                                correct: 0,
+                                miss: 0,                         
+                            });
+                            index--;
+                        }
+                        this.record[index].correct++;
+                        if( this.record[index].time <= 0 ){
+                            this.record[index].time = this.answer_time;
                         }else
-                        if( this.record[this.quiz_target_index].time > this.answer_time ){
-                            this.record[this.quiz_target_index].time = this.answer_time;
+                        if( this.record[index].time > this.answer_time ){
+                            this.record[index].time = this.answer_time;
                             this.message = "最短記録";
                             this.toast_show("最短記録です。");
                         }
@@ -129,7 +137,17 @@ var vue_options = {
                     }
                     case QUIZ_STATUS.MISS:{
                         this.quiz_image = this.quiz_target.image;
-                        this.record[this.quiz_target_index].miss++;
+                        var index = this.record.findIndex(item => item.name == this.quiz_target.name );
+                        if( index < 0 ){
+                            index = this.record.push({
+                                name: this.quiz_target.name,
+                                time: -1,
+                                correct: 0,
+                                miss: 0,                                
+                            });
+                            index--;
+                        }
+                        this.record[index].miss++;
                         Cookies.set('quiz_record', this.record, {expires: 365} );
 
                         this.counting = 1;
@@ -166,9 +184,7 @@ var vue_options = {
             if( this.counting >= 1 ){
                 // タイムアウト待ち受け中
                 this.counting--;
-                timer = setTimeout(() =>{
-                    this.process();
-                }, this.interval);
+                timer = setTimeout(this.process, this.interval);
             }
         },
         left_click: function(){
@@ -191,17 +207,8 @@ var vue_options = {
         proc_load();
 
         this.record = Cookies.getJSON('quiz_record');
-        if( !this.record ){
+        if( !this.record )
             this.record = [];
-            for( var i = 0 ; i < quiz_contents.length ; i++ ){
-                this.record.push({
-                    name: quiz_contents[i].name,
-                    time: -1,
-                    correct: 0,
-                    miss: 0,
-                });
-            }
-        }
     }
 };
 vue_add_methods(vue_options, methods_bootstrap);
